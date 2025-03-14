@@ -1,0 +1,78 @@
+---
+title: "TSF_HW2_Q4"
+output: html_document
+date: "2025-03-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(fpp3)
+library(fpp)
+library(fpp2)
+library(forecast)
+library(tseries)
+library(timeDate)
+library(timeSeries)
+library(slam)
+library(Rglpk)
+library(cccp)
+library(FRAPO)
+library(ggplot2)
+```
+
+```{r}
+data("ausair")
+dj_ts <- ts(ausair)
+
+autoplot(dj_ts) + ggtitle("ausair Time Series") + xlab("Time") + ylab("Index Value")
+
+kpss_test <- kpss.test(dj_ts)
+adf_test <- adf.test(dj_ts)
+
+
+cat("KPSS p-value:", kpss_test$p.value, "\n")
+cat("ADF p-value:", adf_test$p.value, "\n")
+# Data is non-stationary according to the results
+```
+
+
+```{r}
+ndiffs_needed <- ndiffs(dj_ts)
+cat("Number of differences needed:", ndiffs_needed, "\n")
+dj_diff <- diff(dj_ts, differences = 1)
+
+autoplot(dj_diff) + ggtitle("First-Order Differenced ausair") + xlab("Time") + ylab("Differenced Value")
+```
+
+```{r}
+acf(dj_diff, main="ACF of First-Order Differenced ausair")
+```
+
+```{r}
+data("ausair")
+ausair_ts <- ts(ausair)
+
+train_size <- floor(0.8 * length(ausair_ts))
+train_data <- window(ausair_ts, end = time(ausair_ts)[train_size])
+test_data <- window(ausair_ts, start = time(ausair_ts)[train_size + 1])
+
+# Regular Naive forecast
+naive_model <- naive(train_data, h = length(test_data))
+plot(naive_model, main="Forecasts from Naive method (Original)")
+lines(test_data, col="red")
+legend("topleft", legend=c("Forecast", "Actual"), col=c("blue", "red"), lty=1)
+naive_accuracy <- accuracy(naive_model, test_data)
+print("Naive forecast accuracy:")
+print(naive_accuracy)
+```
+
+```{r}
+# Random walk with drift model
+rw_drift_model <- rwf(train_data, drift=TRUE, h=length(test_data))
+plot(rw_drift_model, main="Forecasts from Random Walk with Drift")
+lines(test_data, col="red")
+legend("topleft", legend=c("Forecast", "Actual"), col=c("blue", "red"), lty=1)
+```
